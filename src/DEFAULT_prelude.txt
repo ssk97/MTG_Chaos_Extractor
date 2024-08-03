@@ -1,0 +1,25 @@
+[Settings]
+{
+	"name": "Modern Chaos",
+	"withReplacement": false,
+	"showSlots": true,
+	"colorBalance": true,
+	"layouts": {
+		"Primary": {
+			"weight": 1,
+			"slots": {
+				"Uncommon": 5,
+				"Common": 9,
+				"Land": 1
+			}
+		}
+	},
+	"predeterminedLayouts": [["Primary"],["Primary"],["Primary"]]
+}
+[Land]
+8 Snow-Covered Forest (SLD) 329
+8 Snow-Covered Island (SLD) 326
+8 Snow-Covered Mountain (SLD) 328
+8 Snow-Covered Plains (SLD) 325
+8 Snow-Covered Swamp (SLD) 327
+8 Snow-Covered Wastes (MH3) 309
