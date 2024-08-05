@@ -4,8 +4,9 @@ use regex::Regex;
 use deunicode::deunicode;
 //const MASTER_LIST:[&str;13] = ["MMA","VMA","MM2","EMA","MM3","IMA","UMA","2XM","2X2","MH1","MH2","A25","DMR"];
 //const SET_LIST:[&str;3] = ["RTR","GTC","DGM"];
-const FILE_OUT_SCRYFALL:&str = "PreModern_scryfall.txt";
-const FILE_OUT_FINAL:&str = "PreModern.txt";
+const CORE_SKIP:[&str;4] = ["7ED","8ED","9ED","10E"];
+const FILE_OUT_SCRYFALL:&str = "Tentpole_scryfall.txt";
+const FILE_OUT_FINAL:&str = "Tentpole.txt";
 
 const FILE_OUT_MAGE:&str = "EVERYTHING_mage.txt";
 const PRELUDE:&[u8] = include_bytes!("DEFAULT_prelude.txt");
@@ -13,11 +14,11 @@ const PRELUDE:&[u8] = include_bytes!("DEFAULT_prelude.txt");
 enum DupMode{
     All, NoId, PerSet, Canonicalize, Latest
 }
-const DUPLICATE_MODE:DupMode = DupMode::Latest;
+const DUPLICATE_MODE:DupMode = DupMode::PerSet;
 
 fn main(){
     scryfall_data();
-    mage_compatible();
+    //mage_compatible();
     set_intersect();
 }
 
@@ -101,8 +102,17 @@ fn get_mult(card: &Value) -> i32{
     };
 }*/
 fn check_sets(card: &Value) -> bool{
+
+    let set = card["set"].as_str().unwrap().to_ascii_uppercase();
+    if set == "MH1" {return true;}
+
     let date = card["released_at"].as_str().unwrap();
-    return date[0..4] < *"2003" || (date[0..4] == *"2003" && date[5..7] < *"07");
+    let set_type = card["set_type"].as_str().unwrap();
+    if !["core","expansion"].contains(&set_type) {return false;}
+    if date[0..4] < *"2000" || (date[0..4] == *"2000" && date[5..7] < *"09") {return false;}
+    if date[0..4] > *"2020" || (date[0..4] == *"2020" && date[5..7] > *"02") {return false;}
+    if card["booster"]==false {return false;}
+    return !CORE_SKIP.contains(&set.as_str());
     //let set = card["set"].as_str().unwrap().to_ascii_uppercase();
     //return SET_LIST.contains(&set.as_str());
 }
@@ -111,7 +121,7 @@ fn check_sets(card: &Value) -> bool{
 fn baseline_check(card: &Value) -> bool{
     assert!(card["object"] == "card");
     if card.get("mtgo_id").is_none() && card.get("arena_id").is_none()
-    && card.get("tcgplayer_id").is_none() && card.get("cardmarket_id").is_none(){
+    && card.get("tcgplayer_id").is_none()/* && card.get("cardmarket_id").is_none()*/{
         //The card isn't a normal card - Meld backsides, for example
         return false;
     }
@@ -410,7 +420,7 @@ fn set_intersect(){
     
     let scryfall_short_card_regex = match DUPLICATE_MODE {
         DupMode::Canonicalize | DupMode::All | DupMode::PerSet => {
-            Regex::new(r"^(\d+ )?([^0-9].*) \(.*\) \d+$").unwrap()
+            Regex::new(r"^(\d+ )?([^0-9].*) \(.*\) .+$").unwrap()
         }
         DupMode::Latest | DupMode::NoId => { // 1x card, lowest rarity then latest printing. Don't store the ID.
             Regex::new(r"^(\d+ )?([^0-9].*) \(.*\)$").unwrap()

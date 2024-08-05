@@ -1,20 +1,29 @@
 [Settings]
 {
-	"name": "Modern Chaos",
+	"name": "Tentpole Chaos",
 	"withReplacement": false,
 	"showSlots": true,
 	"colorBalance": true,
 	"layouts": {
-		"Primary": {
+		"Rare": {
+			"weight": 3,
+			"slots": {
+				"Rare": 1,
+				"Uncommon": 3,
+				"Common": 10,
+				"Land": 1
+			},
+		"Mythic": {
 			"weight": 1,
 			"slots": {
-				"Uncommon": 5,
-				"Common": 9,
+				"Mythic": 1,
+				"Uncommon": 3,
+				"Common": 10,
 				"Land": 1
 			}
 		}
 	},
-	"predeterminedLayouts": [["Primary"],["Primary"],["Primary"]]
+	"predeterminedLayouts": [["Rare","Mythic"],["Rare","Mythic"],["Rare","Mythic"]]
 }
 [Land]
 8 Snow-Covered Forest (SLD) 329
