@@ -1,18 +1,19 @@
 [Settings]
 {
-	"name": "Tentpole Chaos",
+	"name": "Chaos",
 	"withReplacement": false,
 	"showSlots": true,
 	"colorBalance": true,
 	"layouts": {
 		"Rare": {
-			"weight": 3,
+			"weight": 7,
 			"slots": {
 				"Rare": 1,
 				"Uncommon": 3,
 				"Common": 10,
 				"Land": 1
-			},
+			}
+		},
 		"Mythic": {
 			"weight": 1,
 			"slots": {
@@ -26,9 +27,9 @@
 	"predeterminedLayouts": [["Rare","Mythic"],["Rare","Mythic"],["Rare","Mythic"]]
 }
 [Land]
-8 Snow-Covered Forest (SLD) 329
-8 Snow-Covered Island (SLD) 326
-8 Snow-Covered Mountain (SLD) 328
-8 Snow-Covered Plains (SLD) 325
-8 Snow-Covered Swamp (SLD) 327
+8 Snow-Covered Forest (SLD) 1477
+8 Snow-Covered Island (SLD) 1474
+8 Snow-Covered Mountain (SLD) 1476
+8 Snow-Covered Plains (SLD) 1473
+8 Snow-Covered Swamp (SLD) 1475
 8 Snow-Covered Wastes (MH3) 309

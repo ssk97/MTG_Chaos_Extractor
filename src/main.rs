@@ -4,9 +4,8 @@ use regex::Regex;
 use deunicode::deunicode;
 //const MASTER_LIST:[&str;13] = ["MMA","VMA","MM2","EMA","MM3","IMA","UMA","2XM","2X2","MH1","MH2","A25","DMR"];
 //const SET_LIST:[&str;3] = ["RTR","GTC","DGM"];
-const CORE_SKIP:[&str;4] = ["7ED","8ED","9ED","10E"];
-const FILE_OUT_SCRYFALL:&str = "Tentpole_scryfall.txt";
-const FILE_OUT_FINAL:&str = "Tentpole.txt";
+const FILE_OUT_SCRYFALL:&str = "TotalChaos_scryfall.txt";
+const FILE_OUT_FINAL:&str = "TotalChaos.txt";
 
 const FILE_OUT_MAGE:&str = "EVERYTHING_mage.txt";
 const PRELUDE:&[u8] = include_bytes!("DEFAULT_prelude.txt");
@@ -14,7 +13,7 @@ const PRELUDE:&[u8] = include_bytes!("DEFAULT_prelude.txt");
 enum DupMode{
     All, NoId, PerSet, Canonicalize, Latest
 }
-const DUPLICATE_MODE:DupMode = DupMode::PerSet;
+const DUPLICATE_MODE:DupMode = DupMode::Latest;
 
 fn main(){
     scryfall_data();
@@ -32,9 +31,9 @@ enum Rarity{
     Other,
 }
 use Rarity::*;
-//const RARITY_ARR:[Rarity;5] = [Land,Common,Uncommon,Rare,Mythic];
-//const RARITY_ARR:[Rarity;2] = [Common,Uncommon];
-const RARITY_ARR:[Rarity;5] = [Common,Uncommon,Rare,Mythic,Other];
+const RARITY_ARR:[Rarity;5] = [Land,Common,Uncommon,Rare,Mythic];
+//const RARITY_ARR:[Rarity;3] = [Land, Common, Uncommon];
+//const RARITY_ARR:[Rarity;5] = [Common,Uncommon,Rare,Mythic,Other];
 
 #[derive(PartialEq, Clone, Debug)]
 struct CardData{
@@ -61,7 +60,8 @@ fn is_land(card: &Value) -> bool{
 }
 
 fn rarity_check(card: &Value, rarity: &Rarity) -> bool{
-    /*if is_land(card){
+    let card_rarity = &card["rarity"];
+    /*if is_land(card) && card_rarity == "rare"{
         return rarity == &Land
     }*/
     let rarity_val = &match rarity{
@@ -72,7 +72,6 @@ fn rarity_check(card: &Value, rarity: &Rarity) -> bool{
         Mythic =>   "mythic",
         Other => return true,
     };
-    let card_rarity = &card["rarity"];
     return card_rarity == rarity_val;
 }
 fn get_mult(_card: &Value) -> i32 {return 1;}
@@ -102,17 +101,14 @@ fn get_mult(card: &Value) -> i32{
     };
 }*/
 fn check_sets(card: &Value) -> bool{
-
-    let set = card["set"].as_str().unwrap().to_ascii_uppercase();
-    if set == "MH1" {return true;}
-
     let date = card["released_at"].as_str().unwrap();
     let set_type = card["set_type"].as_str().unwrap();
-    if !["core","expansion"].contains(&set_type) {return false;}
-    if date[0..4] < *"2000" || (date[0..4] == *"2000" && date[5..7] < *"09") {return false;}
-    if date[0..4] > *"2020" || (date[0..4] == *"2020" && date[5..7] > *"02") {return false;}
+    //if set_type != "expansion" {return false;}
+    if !["core","expansion","draft_innovation","masters"].contains(&set_type) {return false;}
+    //if date[0..4] < *"2005" || (date[0..4] == *"2005" && date[5..7] < *"09") {return false;}
+    //if date[0..4] > *"2019" || (date[0..4] == *"2019" && date[5..7] > *"06") {return false;}
     if card["booster"]==false {return false;}
-    return !CORE_SKIP.contains(&set.as_str());
+    return true;
     //let set = card["set"].as_str().unwrap().to_ascii_uppercase();
     //return SET_LIST.contains(&set.as_str());
 }
@@ -135,6 +131,8 @@ fn baseline_check(card: &Value) -> bool{
         if !(card["games"].as_array().unwrap().iter().any(|x| x == "paper")) {return false;}
         if legal["vintage"] == "not_legal" || legal["vintage"] == "banned" {return false;}
         if card["type_line"].as_str().unwrap().contains("Basic") {return false;}
+        let set = card["set"].as_str().unwrap().to_ascii_uppercase();
+        if ["DBL"].contains(&set.as_str()) {return false;}
         return true;
     }
     return false;
@@ -143,6 +141,7 @@ fn baseline_check(card: &Value) -> bool{
 //Remove Monarch, Initiative, and Commander cards
 static REGEX_REMOVE_PARENS: OnceLock<Regex> = OnceLock::new();
 fn mechanics_check(card: &Value) -> bool{
+    /*
     let full_oracle = card.get("oracle_text").map_or_else(||{None},Value::as_str).unwrap_or("");
     let regex = REGEX_REMOVE_PARENS.get_or_init(||{
         Regex::new(r"\([^)]+\)").unwrap()
@@ -155,7 +154,7 @@ fn mechanics_check(card: &Value) -> bool{
         } else {
             return card["type_line"].as_str().unwrap().contains("Planeswalker");
         }
-    }
+    }*/
     return true;
 }
 
@@ -166,23 +165,7 @@ fn check_supplemental(card: &Value) -> bool{
     if ["treasure_chest"].contains(&set_type) {return false;}
     return true;
 }
-fn check_modern(card: &Value) -> bool{
-    let date = card["released_at"].as_str().unwrap();
-    if let Value::Object(legal) = &card["legalities"]{
-        if legal["modern"] != "legal" { return false; }
-    } else {
-        return false;
-    }
-    if card["booster"] != true {return false;}
-    let set_id:String = card["set"].as_str().unwrap().to_ascii_uppercase();
-    if ["PLST","PLIST","PHED","PAGL","DBL"].contains(&set_id.as_str()) {return false;}
-    //if ["LTR","MH1","MH2","J22"].contains(&set_id.as_str()) {return true;}
-    //if ["CMM","MB1","PLST","PLIST","FMB1","SLX"].contains(&set_id.as_str()) {return false;}
-    //if !["core","expansion","masters"].contains(&set_type) {return false;}
-    let year:u16 = (date[0..4]).parse().unwrap();
-    return year >= 2003;
-    //if !["core","expansion","draft_innovation","masters"].contains(&set_type) {return false;}
-}
+
 //Ban all versions of a given card
 fn ban_check(card: &Value) -> bool {return false;}
 /*fn ban_check(card: &Value) -> bool{
@@ -256,7 +239,6 @@ fn scryfall_data() {
     let v = serde_json::from_reader(file_read).unwrap();
     let mut file_write =  BufWriter::new(File::create(Path::new(FILE_OUT_SCRYFALL)).unwrap());
 
-    let mut count = 0;
     let mut seen_map = SetData::new();
     let mut ban_list = HashSet::new();
     //read in
@@ -271,7 +253,6 @@ fn scryfall_data() {
                 if baseline_check(card) && rarity_check(card, &rarity) && check_sets(card) {
                     if mechanics_check(card) {
                         seen_map.insert(mapname, cardmapvalue);
-                        count += 1;
                     } else {
                         println!("mechanics fail: {}",cardmapvalue.name);
                     }
@@ -281,7 +262,8 @@ fn scryfall_data() {
     } else {
         panic!("File not array of cards");
     }
-    println!("Scryfall Complete with {} cards, saving", count);
+    let count = seen_map.datamap.len();
+    println!("Scryfall Complete with {} cards", count);
     seen_map.filter(&ban_list);
     if seen_map.datamap.len() != count{
         println!("{} cards banned", count-seen_map.datamap.len());
@@ -311,6 +293,7 @@ fn mage_compatible(){
     let card_name_regex = Regex::new(r#""(.*?)"\s*(,|\)|$)"#).unwrap();
     let card_regex =  Regex::new(r"SetCardInfo").unwrap();
     let find_set_regex = Regex::new(r#".*?super\(".*?",\s*"(.*?)","#).unwrap();
+    let comment_regex = Regex::new(r"^\s+//").unwrap();
 
     let mut count = 0;
     let mut seen_map = HashSet::new();
@@ -322,7 +305,7 @@ fn mage_compatible(){
         let mut set = None;
         'reading: for line_check in read.lines(){
             let data = line_check.unwrap();
-            if card_regex.is_match(&data){
+            if card_regex.is_match(&data) && !comment_regex.is_match(&data){
                 if !set.is_some() {break 'reading;}
                 let name_capture = card_name_regex.captures(&data);
                 let name = &name_capture.unwrap()[1].replace("\\","");
